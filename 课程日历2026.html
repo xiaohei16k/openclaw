@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>2026春季课程日历</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'PingFang SC','Microsoft YaHei','Hiragino Sans GB',sans-serif; background:#f0f4ff; }
+
+@page { size: A4 portrait; margin: 8mm; }
+@media print {
+  body { background: white; }
+  .page { page-break-after: always; box-shadow: none; margin: 0 auto; }
+  .page:last-child { page-break-after: avoid; }
+}
+
+/* ── Page shell ── */
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto 16px;
+  padding: 7mm 8mm;
+  background: #fff;
+  box-shadow: 0 6px 28px rgba(0,0,0,.13);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* decorative blobs */
+.blob { position:absolute; border-radius:50%; pointer-events:none; z-index:0; }
+
+/* ── Page title bar ── */
+.page-title {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 16px; border-radius: 12px; color: white;
+  position: relative; z-index: 1; flex-shrink: 0;
+}
+.pt-text { font-size: 15px; font-weight: 900; letter-spacing: .5px; }
+.pt-legend { display: flex; gap: 12px; }
+.leg { display:flex; align-items:center; gap:5px; font-size: 11px; }
+.dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.dot-s{background:#3b82f6;} .dot-f{background:#22c55e;}
+.dot-k{background:#ef4444;} .dot-h{background:#f97316;}
+
+/* ── Month block ── */
+.month-block {
+  display: flex; flex-direction: column; gap: 6px;
+  position: relative; z-index: 1;
+}
+
+/* Month header */
+.mhdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; border-radius: 10px; color: white; flex-shrink: 0;
+}
+.mhdr-l { display:flex; align-items:baseline; gap:10px; }
+.mhdr-name { font-size: 20px; font-weight: 900; }
+.mhdr-en { font-size: 11px; opacity: .85; }
+.mhdr-note { font-size: 11px; text-align:right; opacity:.95; line-height: 1.6; }
+
+.hdr-mar { background: linear-gradient(135deg,#e879f9,#ec4899); }
+.hdr-apr { background: linear-gradient(135deg,#38bdf8,#6366f1); }
+.hdr-may { background: linear-gradient(135deg,#4ade80,#059669); }
+.hdr-jun { background: linear-gradient(135deg,#fb923c,#f43f5e); }
+
+/* ── Calendar table ── */
+.cal {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+}
+.cal th {
+  text-align: center; padding: 5px 2px;
+  font-size: 11px; font-weight: 800; color: #9ca3af; letter-spacing: .5px;
+}
+.cal th.wk { color: #f87171; }
+
+.cal td {
+  vertical-align: top;
+  width: calc(100%/7);
+  height: 44px;
+  border-radius: 8px;
+  padding: 4px 5px;
+}
+
+/* Empty cells: truly invisible */
+.de {
+  background: transparent !important;
+  border: none !important;
+  pointer-events: none;
+}
+
+/* Normal, weekend, holiday, semester-end */
+.dn { background: #f8fafc; border: 1.5px solid #e2e8f0; }
+.dw { background: #fef2f2; border: 1.5px solid #fecaca; }
+.dw .n { color: #f87171; }
+.dh { background: #fff7ed; border: 1.5px dashed #fb923c; }
+.dh .n { color: #ea580c; }
+.dend { background: #f0fdf4; border: 2px solid #22c55e; }
+.dend .n { color: #15803d !important; }
+
+/* Day number */
+.n { font-weight: 800; font-size: 13px; color: #374151; line-height: 1; }
+
+/* Holiday badge */
+.hb {
+  display: inline-block; background: #f97316; color: white;
+  border-radius: 3px; padding: 0 4px;
+  font-size: 9px; font-weight: 800; line-height: 14px; margin-top: 1px;
+}
+
+/* Event tags */
+.ev {
+  display: flex; align-items: center;
+  border-radius: 5px; padding: 1px 4px; margin-top: 2px;
+  font-size: 10px; font-weight: 800; line-height: 1.3;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.es { background: #dbeafe; color: #1d4ed8; border-left: 3px solid #3b82f6; }
+.ef { background: #dcfce7; color: #15803d; border-left: 3px solid #22c55e; }
+.ek { background: #ffe4e6; color: #b91c1c; border-left: 3px solid #ef4444; }
+.ec { background: #fef3c7; color: #92400e; border-left: 3px solid #f59e0b;
+      text-decoration: line-through; opacity: .75; }
+/* First-class marker */
+.ef1::after { content: ' ①'; font-size: 9px; }
+
+/* ── Bottom stats row ── */
+.bot {
+  display: flex; gap: 8px; align-items: stretch;
+}
+.stats { display: flex; gap: 6px; flex: 1; }
+.stat {
+  flex: 1; border-radius: 9px; padding: 6px 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.ss { background: #eff6ff; border: 1.5px solid #bfdbfe; }
+.sf { background: #f0fdf4; border: 1.5px solid #bbf7d0; }
+.sk { background: #fff1f2; border: 1.5px solid #fecdd3; }
+.si { font-size: 20px; line-height: 1; }
+.sl { font-size: 10px; color: #6b7280; }
+.sn { font-size: 18px; font-weight: 900; line-height: 1; }
+.ss .sn { color: #1d4ed8; }
+.sf .sn { color: #15803d; }
+.sk .sn { color: #b91c1c; }
+.sx { font-size: 9px; color: #94a3b8; }
+
+/* Holiday note strip */
+.hn {
+  background: #fff7ed; border-left: 4px solid #f97316;
+  border-radius: 0 8px 8px 0;
+  padding: 5px 10px; font-size: 10px; color: #9a3412; line-height: 1.6;
+  display: flex; align-items: center;
+  flex: 1.3;
+}
+
+/* Divider between months */
+.divider {
+  border: none; border-top: 1.5px dashed #e2e8f0;
+  margin: 2px 0; flex-shrink: 0;
+}
+
+/* ── Summary strip ── */
+.summary {
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border: 2px solid #86efac; border-radius: 14px;
+  padding: 12px 20px;
+  position: relative; z-index: 1; flex-shrink: 0;
+}
+.sum-items { display: flex; gap: 20px; }
+.sum-item { text-align: center; }
+.sum-em { font-size: 28px; line-height: 1; }
+.sum-num { font-size: 26px; font-weight: 900; line-height: 1; margin-top: 2px; }
+.sum-s .sum-num { color: #1d4ed8; }
+.sum-f .sum-num { color: #15803d; }
+.sum-k .sum-num { color: #b91c1c; }
+.sum-lbl { font-size: 10px; color: #6b7280; margin-top: 2px; }
+.sum-divider { width: 1.5px; background: #bbf7d0; align-self: stretch; }
+.sum-total { text-align: center; }
+.sum-big { font-size: 44px; font-weight: 900; color: #15803d; line-height: 1; }
+.sum-desc { font-size: 12px; color: #374151; margin-top: 3px; }
+.sum-note { font-size: 9px; color: #94a3b8; margin-top: 2px; }
+.sum-end { text-align: center; }
+.sum-end-icon { font-size: 28px; }
+.sum-end-txt { font-size: 11px; color: #6b7280; font-weight: 800; margin-top: 3px; }
+
+/* ── Page footer ── */
+.pfooter {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: #cbd5e1;
+  position: relative; z-index: 1; flex-shrink: 0;
+  padding: 0 2px;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ PAGE 1: March + April ═══════════ -->
+<div class="page">
+  <div class="blob" style="width:180px;height:180px;top:-60px;right:-50px;background:radial-gradient(circle,#fbcfe822,transparent 70%);"></div>
+  <div class="blob" style="width:150px;height:150px;bottom:-50px;left:-40px;background:radial-gradient(circle,#bfdbfe22,transparent 70%);"></div>
+
+  <!-- School title -->
+  <div style="text-align:center;position:relative;z-index:1;flex-shrink:0;padding:8px 0 4px;">
+    <div style="font-size:22px;font-weight:900;color:#1e293b;letter-spacing:3px;">特色活动课程时间安排</div>
+    <div style="font-size:11px;color:#7c3aed;font-weight:600;letter-spacing:1px;margin-top:4px;">上海市嘉定区中国福利会新城幼儿园</div>
+    <div style="width:80px;height:3px;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:2px;margin:6px auto 0;"></div>
+  </div>
+
+  <!-- Title -->
+  <div class="page-title" style="background:linear-gradient(135deg,#667eea,#764ba2);">
+    <span class="pt-text">🦞 2026 春季课程日历 · 三月 &amp; 四月</span>
+    <div class="pt-legend">
+      <span class="leg"><span class="dot dot-s"></span>游泳·周五上午</span>
+      <span class="leg"><span class="dot dot-f"></span>足球·单周二下午</span>
+      <span class="leg"><span class="dot dot-k"></span>轮滑·双周四下午</span>
+      <span class="leg"><span class="dot dot-h"></span>节假日</span>
+    </div>
+  </div>
+
+  <!-- ── MARCH ── -->
+  <div class="month-block">
+    <div class="mhdr hdr-mar">
+      <div class="mhdr-l">
+        <span class="mhdr-name">🌸 三月</span>
+        <span class="mhdr-en">March 2026</span>
+      </div>
+      <span class="mhdr-note">⚽ 足球首课 3/17 &nbsp;·&nbsp; 🛼 轮滑首课 3/26</span>
+    </div>
+
+    <!-- March 1=Sunday -->
+    <table class="cal">
+      <thead><tr>
+        <th>一</th><th>二</th><th>三</th><th>四</th><th>五</th>
+        <th class="wk">六</th><th class="wk">日</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="de"></td><td class="de"></td><td class="de"></td>
+          <td class="de"></td><td class="de"></td>
+          <td class="dw"></td>
+          <td class="dw"><div class="n">1</div></td>
+        </tr>
+        <tr>
+          <td class="dn"><div class="n">2</div></td>
+          <td class="dn"><div class="n">3</div></td>
+          <td class="dn"><div class="n">4</div></td>
+          <td class="dn"><div class="n">5</div></td>
+          <td class="dn"><div class="n">6</div><div class="ev es">🏊 游泳</div></td>
+          <td class="dw"><div class="n">7</div></td>
+          <td class="dw"><div class="n">8</div></td>
+        </tr>
+        <tr>
+          <td class="dn"><div class="n">9</div></td>
+          <td class="dn"><div class="n">10</div></td>
+          <td class="dn"><div class="n">11</div></td>
+          <td class="dn"><div class="n">12</div></td>
+          <td class="dn"><div class="n">13</div><div class="ev es">🏊 游泳</div></td>
+          <td class="dw"><div class="n">14</div></td>
+          <td class="dw"><div class="n">15</div></td>
+        </tr>
+        <tr>
+          <td class="dn"><div class="n">16</div></td>
+          <td class="dn"><div class="n">17</div><div class="ev ef ef1">⚽ 足球</div></td>
+          <td class="dn"><div class="n">18</div></td>
+          <td class="dn"><div class="n">19</div></td>
+          <td class="dn"><div class="n">20</div><div class="ev es">🏊 游泳</div></td>
+          <td class="dw"><div class="n">21</div></td>
+          <td class="dw"><div class="n">22</div></td>
+        </tr>
+        <tr>
+          <td class="dn"><div class="n">23</div></td>
+          <td class="dn"><div class="n">24</div></td>
+          <td class="dn"><div class="n">25</div></td>
+          <td class="dn"><div class="n">26</div><div class="ev ek ef1">🛼 轮滑</div></td>
+          <td class="dn"><div class="n">27</div><div class="ev es">🏊 游泳</div></td>
+          <td class="dw"><div class="n">28</div></td>
+          <td class="dw"><div class="n">29</div></td>
+        </tr>
+        <tr>
+          <td class="dn"><div class="n">30</div></td>
+          <td class="dn"><div class="n">31</div><div class="ev ef">⚽ 足球</div></td>
+          <td class="de"></td><td class="de"></td><td class="de"></td>
+          <td class="de"></td><td class="de"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="bot">
+      <div class="stats">
+        <div class="stat ss"><span class="si">🏊</span><div><div class="sl">游泳</div><div class="sn">4</div><div class="sx">次</div></div></div>
+        <div class="stat sf"><span class="si">⚽</span><div><div class="sl">足球</div><div class="sn">2</div><div class="sx">次（含首课）</div></div></div>
+        <div class="stat sk"><span class="si">🛼</span><div><div class="sl">轮滑</div><div class="sn">1</div><div class="sx">次（含首课）</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── APRIL ── -->
+  <div class="month-block">
+    <div class="mhdr hdr-apr">
+      <div class="mhdr-l">
+        <span class="mhdr-name">🌼 四月</span>
+        <span class="mhdr-en">April 2026</span>
+      </div>
+      <span class="mhdr-note">🌿 清明节 4/4—6（周六至周一）</span>
+    </div>
+
+    <!-- April 1=Wednesday -->
+    <table class="cal">
+      <thead><tr>
+        <th>一</th><th>二</th><th>三</th><th>四</th><th>五</th>
+        <th class="wk">六</th><th class="wk">日</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="de"></td><td class="de"></td>
+          <td class="dn"><div class="n">1</div></td>
+          <td class="dn"><div class="n">2</div></td>
+          <td class="dn"><div class="n">3</div><div class="ev es">🏊 游泳</div></td>
+          <td class="dh"><div class="n">4</div><span class="hb">清明节</span></td>
+          <td class="dh"><div class="n">5</div><span class="hb">清明节</span></td>
+        </tr>
+        <tr>
+          <td class="dh"><div class="n">6</div><span class="hb">清明节</span></td>
+          <td class="dn"><div class="n">7</div></td>
+          <td class="dn"><div class="n">8</div></td>
+          <td class="dn"><div class="n">9</div><div class="ev ek">🛼 轮滑</div></td>
+          <td class="dn"><div class="n">10</div><div class="ev es">🏊 游泳</div></td>
+          <td class="dw"><div class="n">11</div></td>
+          <td class="dw"><div class="n">12</div></td>
+        </tr>
+        <tr>
+          <td class="dn"><div class="n">13</div></td>
+          <td class="dn"><div class="n">14</div><div class="ev ef">⚽ 足球</div></td>
+          <td class="dn"><div class="n">15</div></td>
+          <td class="dn"><div class="n">16</div></td>
+          <td class="dn"><div class="n">17</div><div class="ev es">🏊 游泳</div></td>
+          <td class="dw"><div class="n">18</div></td>
+          <td class="dw"><div class="n">19</div></td>
+        </tr>
+        <tr>
+          <td class="dn"><div class="n">20</div></td>
+          <td class="dn"><div class="n">21</div></td>
+          <td class="dn"><div class="n">22</div></td>
+          <td class="dn"><div class="n">23</div><div class="ev ek">🛼 轮滑</div></td>
+          <td class="dn"><div class="n">24</div><div class="ev es">🏊 游泳</div></td>
+          <td class="dw"><div class="n">25</div></td>
+          <td class="dw"><div class="n">26</div></td>
+        </tr>
+        <tr>
+          <td class="dn"><div class="n">27</div></td>
+          <td class="dn"><div class="n">28</div><div class="ev ef">⚽ 足球</div></td>
+          <td class="dn"><div class="n">29</div></td>
+          <td class="dn"><div class="n">30</div></td>
+          <td class="de"></td><td class="de"></td><td class="de"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="bot">
+      <div class="stats">
+        <div class="stat ss"><span class="si">🏊</span><div><div class="sl">游泳</div><div class="sn">4</div><div class="sx">次</div></div></div>
+        <div class="stat sf"><span class="si">⚽</span><div><div class="sl">足球</div><div class="sn">2</div><div class="sx">次</div></div></div>
+        <div class="stat sk"><span class="si">🛼</span><div><div class="sl">轮滑</div><div class="sn">2</div><div class="sx">次</div></div></div>
+      </div>
+      <div class="hn">🌿 <strong>清明节</strong> 4/4—6 放假 · 游泳 4/3 正常 · 轮滑 4/9、游泳 4/10 假后正常</div>
+    </div>
+  </div>
+
+  <div class="pfooter">
+    <span>📅 2026 春季课程 &nbsp;·&nbsp; 学期 3/2 — 6/30</span>
+    <span>第 1 页 / 共 2 页</span>
+  </div>
+</div>
+
+
+<!-- ═══════════ PAGE 2: May + June + Summary ═══════════ -->
+<div class="page">
+  <div class="blob" style="width:180px;height:180px;top:-60px;right:-50px;background:radial-gradient(circle,#bbf7d022,transparent 70%);"></div>
+  <div class="blob" style="width:150px;height:150px;bottom:-50px;left:-40px;background:radial-gradient(circle,#fde68a22,transparent 70%);"></div>
+
+  <!-- Title -->
+  <div class="page-title" style="background:linear-gradient(135deg,#059669,#f43f5e);">
+    <span class="pt-text">🦞 2026 春季课程日历 · 五月 &amp; 六月</span>
+    <div class="pt-legend">
+      <span class="leg"><span class="dot dot-s"></span>游泳·周五上午</span>
+      <span class="leg"><span class="dot dot-f"></span>足球·单周二下午</span>
+      <span class="leg"><span class="dot dot-k"></span>轮滑·双周四下午</span>
+      <span class="leg"><span class="dot dot-h"></span>节假日</span>
+    </div>
+  </div>
+
+  <!-- ── MAY ── -->
+  <div class="month-block">
+    <div class="mhdr hdr-may">
+      <div class="mhdr-l">
+        <span class="mhdr-name">🌻 五月</span>
+        <span class="mhdr-en">May 2026</span>
+      </div>
+      <span class="mhdr-note">🎊 劳动节 5/1—5/5 &nbsp;·&nbsp; 🏊 5/1 游泳停课</span>
+    </div>
+
+    <!-- May 1=Friday -->
+    <table class="cal">
+      <thead><tr>
+        <th>一</th><th>二</th><th>三</th><th>四</th><th>五</th>
+        <th class="wk">六</th><th class="wk">日</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="de"></td><td class="de"></td><td class="de"></td><td class="de"></td>
+          <td class="dh"><div class="n">1</div><span class="hb">劳动节</span><div class="ev ec">🏊 停课</div></td>
+          <td class="dh"><div class="n">2</div><span class="hb">劳动节</span></td>
+          <td class="dh"><div class="n">3</div><span class="hb">劳动节</span></td>
+        </tr>
+        <tr>
+          <td class="dh"><div class="n">4</div><span class="hb">劳动节</span></td>
+          <td class="dh"><div class="n">5</div><span class="hb">劳动节</span></td>
+          <td class="dn"><div class="n">6</div></td>
+          <td class="dn"><div class="n">7</div><div class="ev ek">🛼 轮滑</div></td>
+          <td class="dn"><div class="n">8</div><div class="ev es">🏊 游泳</div></td>
+          <td class="dw"><div class="n">9</div></td>
+          <td class="dw"><div class="n">10</div></td>
+        </tr>
+        <tr>
+          <td class="dn"><div class="n">11</div></td>
+          <td class="dn"><div class="n">12</div><div class="ev ef">⚽ 足球</div></td>
+          <td class="dn"><div class="n">13</div></td>
+          <td class="dn"><div class="n">14</div></td>
+          <td class="dn"><div class="n">15</div><div class="ev es">🏊 游泳</div></td>
+          <td class="dw"><div class="n">16</div></td>
+          <td class="dw"><div class="n">17</div></td>
+        </tr>
+        <tr>
+          <td class="dn"><div class="n">18</div></td>
+          <td class="dn"><div class="n">19</div></td>
+          <td class="dn"><div class="n">20</div></td>
+          <td class="dn"><div class="n">21</div><div class="ev ek">🛼 轮滑</div></td>
+          <td class="dn"><div class="n">22</div><div class="ev es">🏊 游泳</div></td>
+          <td class="dw"><div class="n">23</div></td>
+          <td class="dw"><div class="n">24</div></td>
+        </tr>
+        <tr>
+          <td class="dn"><div class="n">25</div></td>
+          <td class="dn"><div class="n">26</div><div class="ev ef">⚽ 足球</div></td>
+          <td class="dn"><div class="n">27</div></td>
+          <td class="dn"><div class="n">28</div></td>
+          <td class="dn"><div class="n">29</div><div class="ev es">🏊 游泳</div></td>
+          <td class="dw"><div class="n">30</div></td>
+          <td class="dw"><div class="n">31</div></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="bot">
+      <div class="stats">
+        <div class="stat ss"><span class="si">🏊</span><div><div class="sl">游泳</div><div class="sn">4</div><div class="sx">次（停1次）</div></div></div>
+        <div class="stat sf"><span class="si">⚽</span><div><div class="sl">足球</div><div class="sn">2</div><div class="sx">次</div></div></div>
+        <div class="stat sk"><span class="si">🛼</span><div><div class="sl">轮滑</div><div class="sn">2</div><div class="sx">次</div></div></div>
+      </div>
+      <div class="hn">🎊 <strong>劳动节</strong> 5/1—5/5 放假5天 · <strong>5/1 游泳停课</strong> · 轮滑 5/7、游泳 5/8 正常上课</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── JUNE ── -->
+  <div class="month-block">
+    <div class="mhdr hdr-jun">
+      <div class="mhdr-l">
+        <span class="mhdr-name">🌈 六月</span>
+        <span class="mhdr-en">June 2026</span>
+      </div>
+      <span class="mhdr-note">🎏 端午节 6/19—21（估算）&nbsp;·&nbsp; 🏖️ 6/30 学期结束</span>
+    </div>
+
+    <!-- June 1=Monday -->
+    <table class="cal">
+      <thead><tr>
+        <th>一</th><th>二</th><th>三</th><th>四</th><th>五</th>
+        <th class="wk">六</th><th class="wk">日</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="dn"><div class="n">1</div></td>
+          <td class="dn"><div class="n">2</div></td>
+          <td class="dn"><div class="n">3</div></td>
+          <td class="dn"><div class="n">4</div><div class="ev ek">🛼 轮滑</div></td>
+          <td class="dn"><div class="n">5</div><div class="ev es">🏊 游泳</div></td>
+          <td class="dw"><div class="n">6</div></td>
+          <td class="dw"><div class="n">7</div></td>
+        </tr>
+        <tr>
+          <td class="dn"><div class="n">8</div></td>
+          <td class="dn"><div class="n">9</div><div class="ev ef">⚽ 足球</div></td>
+          <td class="dn"><div class="n">10</div></td>
+          <td class="dn"><div class="n">11</div></td>
+          <td class="dn"><div class="n">12</div><div class="ev es">🏊 游泳</div></td>
+          <td class="dw"><div class="n">13</div></td>
+          <td class="dw"><div class="n">14</div></td>
+        </tr>
+        <tr>
+          <td class="dn"><div class="n">15</div></td>
+          <td class="dn"><div class="n">16</div></td>
+          <td class="dn"><div class="n">17</div></td>
+          <td class="dn"><div class="n">18</div><div class="ev ek">🛼 轮滑</div></td>
+          <td class="dh"><div class="n">19</div><span class="hb">端午节</span><div class="ev ec">🏊 停课</div></td>
+          <td class="dh"><div class="n">20</div><span class="hb">端午节</span></td>
+          <td class="dh"><div class="n">21</div><span class="hb">端午节</span></td>
+        </tr>
+        <tr>
+          <td class="dn"><div class="n">22</div></td>
+          <td class="dn"><div class="n">23</div><div class="ev ef">⚽ 足球</div></td>
+          <td class="dn"><div class="n">24</div></td>
+          <td class="dn"><div class="n">25</div></td>
+          <td class="dn"><div class="n">26</div><div class="ev es">🏊 游泳</div></td>
+          <td class="dw"><div class="n">27</div></td>
+          <td class="dw"><div class="n">28</div></td>
+        </tr>
+        <tr>
+          <td class="dn"><div class="n">29</div></td>
+          <td class="dend"><div class="n">30</div><div style="font-size:8px;color:#15803d;font-weight:800;margin-top:2px;">🎉 学期结束</div></td>
+          <td class="de"></td><td class="de"></td><td class="de"></td>
+          <td class="de"></td><td class="de"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="bot">
+      <div class="stats">
+        <div class="stat ss"><span class="si">🏊</span><div><div class="sl">游泳</div><div class="sn">3</div><div class="sx">次（停1次）</div></div></div>
+        <div class="stat sf"><span class="si">⚽</span><div><div class="sl">足球</div><div class="sn">2</div><div class="sx">次</div></div></div>
+        <div class="stat sk"><span class="si">🛼</span><div><div class="sl">轮滑</div><div class="sn">2</div><div class="sx">次</div></div></div>
+      </div>
+      <div class="hn">🎏 <strong>端午节</strong> 6/19—21（估算）· <strong>6/19 游泳停课</strong> · 轮滑 6/18 正常 · 🏖️ 6/30 学期结束</div>
+    </div>
+  </div>
+
+  <!-- ── Summary ── -->
+  <div class="summary">
+    <div class="sum-items">
+      <div class="sum-item sum-s">
+        <div class="sum-em">🏊</div>
+        <div class="sum-num">16</div>
+        <div class="sum-lbl">游泳课<br>（停2次）</div>
+      </div>
+      <div class="sum-item sum-f">
+        <div class="sum-em">⚽</div>
+        <div class="sum-num">8</div>
+        <div class="sum-lbl">足球课<br>3/17 首课</div>
+      </div>
+      <div class="sum-item sum-k">
+        <div class="sum-em">🛼</div>
+        <div class="sum-num">7</div>
+        <div class="sum-lbl">轮滑课<br>3/26 首课</div>
+      </div>
+    </div>
+    <div class="sum-divider"></div>
+    <div class="sum-total">
+      <div class="sum-big">31</div>
+      <div class="sum-desc">节课 · 全学期合计 💪</div>
+      <div class="sum-note">节假日停课：5/1 劳动节 · 6/19 端午节（估算）</div>
+    </div>
+    <div class="sum-divider"></div>
+    <div class="sum-end">
+      <div class="sum-end-icon">🌟</div>
+      <div class="sum-end-txt">加油！棒棒！<br>7/1 暑假快乐 🏖️</div>
+    </div>
+  </div>
+
+  <div class="pfooter">
+    <span>📅 2026 春季课程 &nbsp;·&nbsp; 学期 3/2 — 6/30 &nbsp;·&nbsp; 7/1 起暑假</span>
+    <span>第 2 页 / 共 2 页</span>
+  </div>
+</div>
+
+</body>
+</html>
